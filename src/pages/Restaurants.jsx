@@ -1,4 +1,3 @@
-// Restaurants.jsx
 import React, { useEffect, useState } from 'react';
 import {
   Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
@@ -7,30 +6,46 @@ import {
 } from '@mui/material';
 import { Add, Delete, Edit, UploadFile, Close, LocationOn, MyLocation, Map } from '@mui/icons-material';
 import {
-  collection, getDocs, addDoc, updateDoc, deleteDoc, doc
+  collection, getDocs, addDoc, updateDoc, deleteDoc, doc, setDoc
 } from 'firebase/firestore';
 import {
   getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL
 } from 'firebase/storage';
 import { db } from '../firebase/Config';
+import Autocomplete from '@mui/material/Autocomplete';
 
 const storage = getStorage();
+
+const availabilityOptions = ['Reservations Required', 'Available', 'Not Available', 'Reserved'];
+const typeOptions = ['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional'];
+const cuisineOptions = ['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional', 'Dessert', 'Chisa-Nyama/Grill'];
+const tagOptions = ['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional', 'Casual', 'African', 'Vegan', 'Halal', 'Buffet', 'Cafe'];
 
 function Restaurants() {
   const [restaurants, setRestaurants] = useState([]);
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '', cuisine: '', type: '', description: '', location: '',
-    openingHours: '', availability: '', price: '', rating: '', reviews: '',
+    openingHours: '', availability: '', rating: '', reviews: '',
     images: [''], specialDishes: [''], tableOptions: [2, 4, 6, 8],
-    coordinates: { latitude: '', longitude: '' }
+    coordinates: { latitude: '', longitude: '' },
+    tags: []
   });
   const [editId, setEditId] = useState(null);
   const [uploading, setUploading] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
   const [mapOpen, setMapOpen] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [locationError, setLocationError] = useState('');
+  const [availabilityOptions, setAvailabilityOptions] = useState(['Reservations Required', 'Available', 'Not Available', 'Reserved']);
+  const [typeOptions, setTypeOptions] = useState(['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional']);
+  const [cuisineOptions, setCuisineOptions] = useState(['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional', 'Dessert', 'Chisa-Nyama/Grill']);
+  const [tagOptions, setTagOptions] = useState(['Fine Dining', 'Pub and Grill', 'Kasi Fast-food', 'Fast Food', 'Traditional', 'Casual', 'African', 'Vegan', 'Halal', 'Buffet', 'Cafe']);
+  const [tempInputValues, setTempInputValues] = useState({
+    cuisine: '',
+    type: '',
+    availability: '',
+    tags: ''
+  });
 
   useEffect(() => {
     const fetchRestaurants = async () => {
@@ -38,7 +53,36 @@ function Restaurants() {
       const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setRestaurants(data);
     };
+    
+    const fetchDropdownOptions = async () => {
+      try {
+        const optionsSnapshot = await getDocs(collection(db, 'dropdownOptions'));
+        optionsSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          switch (doc.id) {
+            case 'cuisineOptions':
+              setCuisineOptions(data.options || cuisineOptions);
+              break;
+            case 'typeOptions':
+              setTypeOptions(data.options || typeOptions);
+              break;
+            case 'availabilityOptions':
+              setAvailabilityOptions(data.options || availabilityOptions);
+              break;
+            case 'tagOptions':
+              setTagOptions(data.options || tagOptions);
+              break;
+            default:
+              break;
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching dropdown options:', error);
+      }
+    };
+    
     fetchRestaurants();
+    fetchDropdownOptions();
   }, []);
 
   const handleOpen = (restaurant = null) => {
@@ -53,14 +97,16 @@ function Restaurants() {
         images: restaurant.images || [''],
         specialDishes: restaurant.specialDishes || [''],
         tableOptions: restaurant.tableOptions || [2, 4, 6, 8],
+        tags: restaurant.tags || []
       });
     } else {
       setEditId(null);
       setFormData({
         name: '', cuisine: '', type: '', description: '', location: '',
-        openingHours: '', availability: '', price: '', rating: '', reviews: '',
+        openingHours: '', availability: '', rating: '', reviews: '',
         images: [''], specialDishes: [''], tableOptions: [2, 4, 6, 8],
-        coordinates: { latitude: '', longitude: '' }
+        coordinates: { latitude: '', longitude: '' },
+        tags: []
       });
     }
     setOpen(true);
@@ -71,6 +117,76 @@ function Restaurants() {
     setEditId(null);
     setMapOpen(false);
     setLocationError('');
+  };
+
+  const handleAddToOptions = async (field, value) => {
+    // Use the temp input value if provided, otherwise use the current form value
+    const valueToSave = value || tempInputValues[field] || formData[field];
+    
+    if (!valueToSave || valueToSave.trim() === '') return;
+    
+    const trimmedValue = valueToSave.trim();
+    let newOptions = [];
+    let docId = '';
+    
+    switch (field) {
+      case 'cuisine':
+        if (!cuisineOptions.includes(trimmedValue)) {
+          newOptions = [...cuisineOptions, trimmedValue];
+          setCuisineOptions(newOptions);
+          docId = 'cuisineOptions';
+          // Also update the form data
+          setFormData(prev => ({ ...prev, cuisine: trimmedValue }));
+        }
+        break;
+      case 'type':
+        if (!typeOptions.includes(trimmedValue)) {
+          newOptions = [...typeOptions, trimmedValue];
+          setTypeOptions(newOptions);
+          docId = 'typeOptions';
+          // Also update the form data
+          setFormData(prev => ({ ...prev, type: trimmedValue }));
+        }
+        break;
+      case 'availability':
+        if (!availabilityOptions.includes(trimmedValue)) {
+          newOptions = [...availabilityOptions, trimmedValue];
+          setAvailabilityOptions(newOptions);
+          docId = 'availabilityOptions';
+          // Also update the form data
+          setFormData(prev => ({ ...prev, availability: trimmedValue }));
+        }
+        break;
+      case 'tags':
+        if (!tagOptions.includes(trimmedValue)) {
+          newOptions = [...tagOptions, trimmedValue];
+          setTagOptions(newOptions);
+          docId = 'tagOptions';
+        }
+        break;
+      default:
+        return;
+    }
+    
+    // Save to Firebase
+    if (newOptions.length > 0 && docId) {
+      try {
+        await setDoc(doc(db, 'dropdownOptions', docId), {
+          options: newOptions,
+          updatedAt: new Date()
+        }, { merge: true });
+        console.log(`Successfully saved ${field} options to Firebase`);
+        
+        // Clear the temp input value after saving
+        setTempInputValues(prev => ({ ...prev, [field]: '' }));
+      } catch (error) {
+        console.error(`Error saving ${field} options to Firebase:`, error);
+      }
+    }
+  };
+
+  const handleInputChange = (field, inputValue) => {
+    setTempInputValues(prev => ({ ...prev, [field]: inputValue }));
   };
 
   const handleChange = (field, value) => {
@@ -211,7 +327,7 @@ function Restaurants() {
               <CardContent>
                 <Typography variant="h6">{restaurant.name}</Typography>
                 <Typography variant="body2" color="text.secondary">{restaurant.cuisine} • {restaurant.type}</Typography>
-                <Typography variant="body2">R{restaurant.price} • ⭐ {restaurant.rating}</Typography>
+                <Typography variant="body2">  ⭐ {restaurant.rating}</Typography>
                 {restaurant.coordinates?.latitude && restaurant.coordinates?.longitude && (
                   <Box display="flex" alignItems="center" mt={1}>
                     <LocationOn fontSize="small" color="primary" />
@@ -234,16 +350,103 @@ function Restaurants() {
         <DialogTitle>{editId ? 'Edit' : 'Add'} Restaurant</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
-            {['name', 'cuisine', 'type', 'description', 'location', 'openingHours', 'availability', 'price', 'rating', 'reviews'].map(field => (
-              <Grid item xs={12} sm={6} key={field}>
-                <TextField
-                  fullWidth
-                  label={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={formData[field]}
-                  onChange={(e) => handleChange(field, e.target.value)}
+            <Grid item xs={12} sm={6}>
+              <TextField fullWidth label="Name" value={formData.name} onChange={(e) => handleChange('name', e.target.value)} />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Autocomplete
+                  freeSolo
+                  options={cuisineOptions}
+                  value={formData.cuisine}
+                  onChange={(e, newValue) => handleChange('cuisine', newValue || '')}
+                  onInputChange={(e, inputValue) => handleInputChange('cuisine', inputValue)}
+                  renderInput={(params) => <TextField {...params} label="Cuisine" />}
+                  sx={{ flexGrow: 1 }}
                 />
-              </Grid>
-            ))}
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => handleAddToOptions('cuisine')}
+                  disabled={!formData.cuisine && !tempInputValues.cuisine}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Autocomplete
+                  freeSolo
+                  options={availabilityOptions}
+                  value={formData.availability}
+                  onChange={(e, newValue) => handleChange('availability', newValue || '')}
+                  onInputChange={(e, inputValue) => handleInputChange('availability', inputValue)}
+                  renderInput={(params) => <TextField {...params} label="Availability" />}
+                  sx={{ flexGrow: 1 }}
+                />
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => handleAddToOptions('availability')}
+                  disabled={!formData.availability && !tempInputValues.availability}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Box display="flex" alignItems="center" gap={1}>
+                <Autocomplete
+                  freeSolo
+                  options={typeOptions}
+                  value={formData.type}
+                  onChange={(e, newValue) => handleChange('type', newValue || '')}
+                  onInputChange={(e, inputValue) => handleInputChange('type', inputValue)}
+                  renderInput={(params) => <TextField {...params} label="Type" />}
+                  sx={{ flexGrow: 1 }}
+                />
+                <Button 
+                  variant="outlined" 
+                  size="small" 
+                  onClick={() => handleAddToOptions('type')}
+                  disabled={!formData.type && !tempInputValues.type}
+                >
+                  Save
+                </Button>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Autocomplete
+                multiple
+                freeSolo
+                options={tagOptions}
+                value={formData.tags || []}
+                onChange={(e, newValue) => handleChange('tags', newValue)}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip key={option} label={option} {...getTagProps({ index })} />
+                  ))
+                }
+                renderInput={(params) => <TextField {...params} label="Tags (e.g. Vegan, Halal, Cafe)" />}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField fullWidth label="Description" value={formData.description} onChange={(e) => handleChange('description', e.target.value)} />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField fullWidth label="Location" value={formData.location} onChange={(e) => handleChange('location', e.target.value)} />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField fullWidth label="Opening Hours" value={formData.openingHours} onChange={(e) => handleChange('openingHours', e.target.value)} />
+            </Grid>
 
             <Grid item xs={12}>
               <Typography variant="h6" gutterBottom>Upload Images</Typography>
