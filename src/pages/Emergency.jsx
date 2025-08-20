@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore"
-import { db } from "../firebase/config"
+import { db } from "../firebase/Config"
 import {
   Box,
   Button,
