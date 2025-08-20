@@ -56,7 +56,7 @@ import {
 } from "@mui/icons-material"
 import { collection, getDocs, updateDoc, deleteDoc, doc, setDoc } from "firebase/firestore"
 import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "firebase/storage"
-import { db } from "../Firebase/config"
+import { db } from "../firebase/Config"
 
 const storage = getStorage()
 

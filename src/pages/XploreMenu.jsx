@@ -34,7 +34,7 @@ import {
   FilterList,
 } from "@mui/icons-material"
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "firebase/firestore"
-import { db } from "../firebase/config"
+import { db } from "../firebase/Config"
 
 function XploreMenu() {
   const [menuItems, setMenuItems] = useState([])
