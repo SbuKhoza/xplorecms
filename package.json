@@ -10,19 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.1",
-    "@mui/material": "^7.3.1",
-    "@mui/styled-engine-sc": "^7.2.0",
+    "@tailwindcss/vite": "^4.3.5",
     "firebase": "^11.10.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^1.70.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.6.3",
-    "styled-components": "^6.1.19",
-    "uuid": "^11.1.0"
+    "tailwindcss": "^4.3.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",
