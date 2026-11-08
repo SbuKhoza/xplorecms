@@ -1,6 +1,6 @@
 import { Field, Input, Textarea, Select, Toggle } from './ui'
 import { StringList, ObjectList, ImagesField, CoordinatesField, GradientField } from './fields'
-import { getPath, setPath, cn } from '../lib/utils'
+import { getPath, setPath, cn, looksLikeTimestamp } from '../lib/utils'
 
 const span = { full: 'sm:col-span-6', half: 'sm:col-span-3', third: 'sm:col-span-2' }
 
@@ -13,6 +13,8 @@ export default function SchemaForm({ sections, values, onChange, suggestions = {
     switch (f.type) {
       case 'textarea':
         return <Textarea rows={f.rows} value={v ?? ''} onChange={(e) => set(f.key, e.target.value)} placeholder={f.placeholder} />
+      case 'datetime':
+        return <Input type="datetime-local" value={v ?? ''} onChange={(e) => set(f.key, e.target.value)} />
       case 'number':
         return <Input type="number" step={f.step ?? 'any'} min={f.min} max={f.max} value={v ?? ''} onChange={(e) => set(f.key, e.target.value)} />
       case 'select': {
@@ -80,6 +82,7 @@ export function buildPayload(sections, values) {
       case 'images': c = (v || []).filter(Boolean); break
       case 'image': c = v || ''; break
       case 'toggle': c = !!v; break
+      case 'datetime': { const d = v ? new Date(v) : null; c = d && !isNaN(d) ? d : null; break }
       case 'objects':
         c = (v || []).map((o) => Object.fromEntries(Object.entries(o).map(([k, x]) => [k, typeof x === 'string' ? x.trim() : x])))
           .filter((o) => Object.values(o).some((x) => x && x !== 'default'))
@@ -93,5 +96,7 @@ export function buildPayload(sections, values) {
     }
     out = setPath(out, f.key, c)
   }
+  // Never write back Timestamps that were flattened to plain maps (createdAt, updatedAt, …)
+  for (const [k, v] of Object.entries(out)) if (looksLikeTimestamp(v)) delete out[k]
   return out
 }

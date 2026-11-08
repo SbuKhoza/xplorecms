@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, MapPinned, Landmark, Bus, ShieldCheck, LogOut } from 'lucide-react'
+import { LayoutDashboard, MapPinned, Landmark, Megaphone, Bus, ShieldCheck, LogOut } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { cn } from '../lib/utils'
 
@@ -7,6 +7,7 @@ export const NAV = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/places', label: 'Places', icon: MapPinned },
   { to: '/soweto', label: 'Soweto', icon: Landmark },
+  { to: '/community', label: 'Community', icon: Megaphone },
   { to: '/transport', label: 'Transport', icon: Bus },
   { to: '/admin', label: 'Admin', icon: ShieldCheck },
 ]

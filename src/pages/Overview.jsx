@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { collection, getCountFromServer, query, where } from 'firebase/firestore'
-import { Bus, Landmark, ArrowRight } from 'lucide-react'
+import { Bus, Landmark, Newspaper, CalendarDays, Megaphone, ArrowRight } from 'lucide-react'
 import { db } from '../firebase/Config'
 import { PLACE_ORDER, PLACE_SCHEMAS } from '../lib/schemas'
 import { Card, PageHeader, Spinner } from '../components/ui'
@@ -19,6 +19,9 @@ export default function Overview() {
         ...PLACE_ORDER.map(async (k) => [k, await count(PLACE_SCHEMAS[k].collection).catch(() => 0)]),
         ['townships', await count('homescreen', where('type', '==', 'township')).catch(() => 0)],
         ['transport', await count('transport').catch(() => 0)],
+        ['news', await count('news').catch(() => 0)],
+        ['events', await count('events').catch(() => 0)],
+        ['announcements', await count('announcements').catch(() => 0)],
       ])
       setCounts(Object.fromEntries(entries))
     })()
@@ -28,6 +31,9 @@ export default function Overview() {
     ...PLACE_ORDER.map((k) => ({ key: k, label: PLACE_SCHEMAS[k].label, icon: PLACE_SCHEMAS[k].icon, to: `/places?tab=${k}` })),
     { key: 'townships', label: 'Townships', icon: Landmark, to: '/soweto?tab=townships' },
     { key: 'transport', label: 'Transport routes', icon: Bus, to: '/transport' },
+    { key: 'news', label: 'News articles', icon: Newspaper, to: '/community?tab=news' },
+    { key: 'events', label: 'Events', icon: CalendarDays, to: '/community?tab=events' },
+    { key: 'announcements', label: 'Announcements', icon: Megaphone, to: '/community?tab=announcements' },
   ]
 
   return (

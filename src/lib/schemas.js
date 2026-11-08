@@ -1,6 +1,8 @@
 import {
   UtensilsCrossed, BedDouble, Trees, Landmark, Briefcase, HeartPulse, Building2, Siren,
+  Newspaper, CalendarDays, Megaphone,
 } from 'lucide-react'
+import { fmtDate, fmtDateTime, nowLocal, toDateLoose } from './utils'
 
 /**
  * One schema per Firestore collection. The generic <CollectionManager> renders the list,
@@ -8,7 +10,7 @@ import {
  * adding a field is a one-line change here.
  *
  * Field types: text | textarea | number | select | toggle | strings | numbers | objects
- *              | images | image | coords
+ *              | images | image | coords | datetime | gradient
  */
 const STATUS = ['Open', 'Closed', 'Temporarily Closed', 'Seasonal']
 
@@ -316,5 +318,81 @@ export const TOWNSHIP_SCHEMA = {
       subfields: [{ key: 'name', label: 'Name', width: 'half' }, { key: 'icon', label: 'Icon (MaterialCommunityIcons)', width: 'half' }, { key: 'text', label: 'Description', type: 'textarea', width: 'full' }],
     }] },
     { title: 'Fun facts', fields: [{ key: 'facts', label: 'Facts', type: 'strings', multiline: true, addLabel: 'Add fact', width: 'full' }] },
+  ],
+}
+
+/* ── Community: news, events, announcements ──────────────── */
+export const NEWS_SCHEMA = {
+  collection: 'news', label: 'News', singular: 'article', icon: Newspaper, titleKey: 'title', hasActive: true,
+  sortBy: { key: 'publishedAt', dir: 'desc' }, filter: 'category', searchKeys: ['title', 'summary', 'category', 'source'],
+  subtitle: (i) => [i.category, i.source, fmtDate(i.publishedAt)].filter(Boolean).join(' • '),
+  badge: (i) => (i.isFeatured ? { text: 'Featured', tone: 'brand' } : null),
+  defaults: () => ({ isActive: true, isFeatured: false, publishedAt: nowLocal() }),
+  sections: [
+    { title: 'Story', fields: [
+      { key: 'title', label: 'Headline', type: 'text', required: true, width: 'full' },
+      { key: 'summary', label: 'Summary', type: 'textarea', rows: 2, hint: 'One or two lines shown in lists', width: 'full' },
+      { key: 'body', label: 'Full article', type: 'textarea', rows: 10, hint: 'Blank line = new paragraph', width: 'full' },
+    ] },
+    { title: 'Details', fields: [
+      { key: 'category', label: 'Category', type: 'text', suggest: true, extraSuggestions: ['Local News', 'Municipal', 'Community', 'Business', 'Safety', 'Events'], width: 'third' },
+      { key: 'source', label: 'Source', type: 'text', width: 'third' },
+      { key: 'publishedAt', label: 'Published', type: 'datetime', width: 'third' },
+      { key: 'isFeatured', label: 'Featured (big card at the top of the News screen)', type: 'toggle', width: 'full' },
+      { key: 'isActive', label: 'Active (visible in the app)', type: 'toggle', width: 'full' },
+    ] },
+    { title: 'Cover image', fields: [{ key: 'imageUrl', label: 'Image', type: 'image', folder: 'news', width: 'full' }] },
+  ],
+}
+
+export const EVENTS_SCHEMA = {
+  collection: 'events', label: 'Events', singular: 'event', icon: CalendarDays, titleKey: 'title', hasActive: true,
+  sortBy: { key: 'date', dir: 'desc' }, filter: 'category', searchKeys: ['title', 'location', 'category', 'organizer'],
+  subtitle: (i) => [fmtDateTime(i.date), i.location].filter(Boolean).join(' • '),
+  badge: (i) => { const d = toDateLoose(i.date); if (!d) return null; const past = d < new Date(new Date().setHours(0, 0, 0, 0)); return { text: past ? 'Past' : 'Upcoming', tone: past ? 'gray' : 'green' } },
+  defaults: () => ({ isActive: true }),
+  sections: [
+    { title: 'Event', fields: [
+      { key: 'title', label: 'Title', type: 'text', required: true, width: 'full' },
+      { key: 'category', label: 'Category', type: 'text', suggest: true, extraSuggestions: ['Music & Culture', 'Sports', 'Food & Market', 'Community', 'Heritage'], width: 'half' },
+      { key: 'date', label: 'Starts', type: 'datetime', required: true, hint: 'The time is shown in the app unless it is exactly 00:00', width: 'half' },
+      { key: 'location', label: 'Location', type: 'text', width: 'full' },
+      { key: 'description', label: 'Description', type: 'textarea', rows: 6, hint: 'Blank line = new paragraph', width: 'full' },
+      { key: 'price', label: 'Price', type: 'text', hint: 'e.g. Free, R50', width: 'half' },
+      { key: 'organizer', label: 'Organizer', type: 'text', width: 'half' },
+      { key: 'isActive', label: 'Active (visible in the app)', type: 'toggle', width: 'full' },
+    ] },
+    { title: 'Cover image', fields: [{ key: 'imageUrl', label: 'Image', type: 'image', folder: 'events', width: 'full' }] },
+  ],
+}
+
+export const ANNOUNCEMENT_TYPES = [
+  { value: 'info', label: 'Notice' }, { value: 'success', label: 'Good news' },
+  { value: 'warning', label: 'Warning' }, { value: 'urgent', label: 'Urgent' },
+]
+export const ANNOUNCEMENTS_SCHEMA = {
+  collection: 'announcements', label: 'Announcements', singular: 'announcement', icon: Megaphone, titleKey: 'title', hasActive: true, noImage: true,
+  sortBy: { key: 'publishedAt', dir: 'desc' }, filter: 'type', searchKeys: ['title', 'message'],
+  subtitle: (i) => [i.message, i.expiresAt && `expires ${fmtDate(i.expiresAt)}`].filter(Boolean).join(' • '),
+  badge: (i) => {
+    const t = i.type || 'info'
+    return { text: `${i.pinned ? '📌 ' : ''}${ANNOUNCEMENT_TYPES.find((x) => x.value === t)?.label || t}`, tone: { info: 'teal', success: 'green', warning: 'amber', urgent: 'red' }[t] || 'gray' }
+  },
+  defaults: () => ({ isActive: true, pinned: false, type: 'info', publishedAt: nowLocal() }),
+  sections: [
+    { title: 'Announcement', fields: [
+      { key: 'title', label: 'Title', type: 'text', required: true, width: 'full' },
+      { key: 'message', label: 'Message', type: 'textarea', rows: 5, required: true, width: 'full' },
+      { key: 'type', label: 'Type', type: 'select', options: ANNOUNCEMENT_TYPES, hint: 'Controls the colour and icon in the app', width: 'half' },
+      { key: 'pinned', label: 'Pinned (always shown first)', type: 'toggle', width: 'half' },
+      { key: 'link', label: 'Link (optional)', type: 'text', placeholder: 'https://…', width: 'half' },
+      { key: 'linkLabel', label: 'Link button text', type: 'text', placeholder: 'Learn more', width: 'half' },
+    ] },
+    { title: 'Schedule', fields: [
+      { key: 'publishedAt', label: 'Published', type: 'datetime', width: 'third' },
+      { key: 'startsAt', label: 'Show from (optional)', type: 'datetime', width: 'third' },
+      { key: 'expiresAt', label: 'Hide after (optional)', type: 'datetime', hint: 'Expired announcements disappear from the app automatically', width: 'third' },
+      { key: 'isActive', label: 'Active (visible in the app)', type: 'toggle', width: 'full' },
+    ] },
   ],
 }

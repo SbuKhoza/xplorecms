@@ -5,7 +5,7 @@ import { db } from '../firebase/Config'
 import { useCollection } from '../hooks/useCollection'
 import { Alert, Badge, Button, Card, Empty, Modal, SearchBox, Select, Spinner, Toggle, useToast } from './ui'
 import SchemaForm, { buildPayload } from './SchemaForm'
-import { slugify, getPath } from '../lib/utils'
+import { slugify, getPath, toMs, toLocalInput, looksLikeTimestamp } from '../lib/utils'
 
 /**
  * Generic list + create/edit/delete manager for any Firestore collection described by a schema.
@@ -30,10 +30,13 @@ export default function CollectionManager({ schema, scope, newDefaults, toolbar,
   const sortKey = (d) => (d.order != null ? Number(d.order) : 1e9)
   const items = useMemo(() => {
     const needle = q.trim().toLowerCase()
+    const sb = schema.sortBy // e.g. { key: 'publishedAt', dir: 'desc' } for dated content
     return all
       .filter((d) => !filterVal || d[schema.filter] === filterVal)
       .filter((d) => !needle || schema.searchKeys.some((k) => String(d[k] ?? '').toLowerCase().includes(needle)))
-      .sort((a, b) => sortKey(a) - sortKey(b) || String(a[titleKey] ?? '').localeCompare(String(b[titleKey] ?? '')))
+      .sort((a, b) => sb
+        ? (sb.dir === 'asc' ? 1 : -1) * (toMs(a[sb.key]) - toMs(b[sb.key]))
+        : sortKey(a) - sortKey(b) || String(a[titleKey] ?? '').localeCompare(String(b[titleKey] ?? '')))
   }, [all, q, filterVal, schema, titleKey])
 
   const filterOptions = useMemo(
@@ -50,10 +53,19 @@ export default function CollectionManager({ schema, scope, newDefaults, toolbar,
     return out
   }, [all, schema])
 
-  const openNew = () => setEditing({ values: { ...structuredClone(schema.defaults || {}), ...newDefaults } })
-  const openEdit = (item) => setEditing({ id: item.id, values: { ...structuredClone(schema.defaults || {}), ...structuredClone(item) } })
+  const defaultsFor = () => (typeof schema.defaults === 'function' ? schema.defaults() : structuredClone(schema.defaults || {}))
+  const allFields = useMemo(() => schema.sections.flatMap((s) => s.fields), [schema])
 
-  const required = schema.sections.flatMap((s) => s.fields).filter((f) => f.required)
+  const openNew = () => setEditing({ values: { ...defaultsFor(), ...newDefaults } })
+  const openEdit = (item) => {
+    // Timestamps → form strings first; any other Timestamp is dropped (structuredClone would flatten it)
+    const base = { ...item }
+    allFields.filter((f) => f.type === 'datetime').forEach((f) => { base[f.key] = toLocalInput(item[f.key]) })
+    Object.keys(base).forEach((k) => { if (looksLikeTimestamp(base[k])) delete base[k] })
+    setEditing({ id: item.id, values: { ...defaultsFor(), ...structuredClone(base) } })
+  }
+
+  const required = allFields.filter((f) => f.required)
 
   const save = async () => {
     const missing = required.find((f) => !String(getPath(editing.values, f.key) ?? '').trim())
@@ -135,6 +147,7 @@ export default function CollectionManager({ schema, scope, newDefaults, toolbar,
                   <p className={`truncate font-bold ${inactive ? 'text-muted line-through' : ''}`}>{item[titleKey] || 'Untitled'}</p>
                   <p className="truncate text-sm text-muted">{schema.subtitle?.(item)}</p>
                 </button>
+                {schema.badge?.(item) && <Badge tone={schema.badge(item).tone} className="hidden sm:inline-flex">{schema.badge(item).text}</Badge>}
                 {item.status && <Badge tone={item.status === 'Open' || item.status === 'On Time' ? 'green' : item.status === 'Delayed' ? 'amber' : 'red'} className="hidden sm:inline-flex">{item.status}</Badge>}
                 {item.rating > 0 && <span className="hidden items-center gap-1 text-sm font-semibold sm:flex"><Star className="size-4 fill-amber-400 text-amber-400" />{item.rating}</span>}
                 {schema.hasActive && <Toggle checked={item.isActive !== false} onChange={() => toggleActive(item)} />}

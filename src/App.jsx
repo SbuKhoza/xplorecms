@@ -6,6 +6,7 @@ import Login from './pages/Login'
 import Overview from './pages/Overview'
 import Places from './pages/Places'
 import Soweto from './pages/Soweto'
+import Community from './pages/Community'
 import Transport from './pages/Transport'
 import Admin from './pages/Admin'
 
@@ -26,6 +27,7 @@ export default function App() {
               <Route index element={<Overview />} />
               <Route path="places" element={<Places />} />
               <Route path="soweto" element={<Soweto />} />
+              <Route path="community" element={<Community />} />
               <Route path="transport" element={<Transport />} />
               <Route path="admin" element={<Admin />} />
             </Route>

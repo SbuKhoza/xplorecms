@@ -1,12 +1,42 @@
-# React + Vite
+# Xplore Soweto — Admin
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Content admin for the Xplore Soweto app. React 19 + Vite + **Tailwind CSS v4** (no UI library) + Firebase.
 
-Currently, two official plugins are available:
+```bash
+npm install
+cp .env.example .env   # optional – falls back to the project's existing Firebase config
+npm run dev
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Structure — 5 pages, everything else is tabs
 
-## Expanding the ESLint configuration
+| Page | Tabs |
+|---|---|
+| **Overview** | live counts, shortcuts |
+| **Places** | Restaurants · Accommodation · Recreation · Attractions · Business · Healthcare · Public services · Emergency |
+| **Soweto** | Hero image · Townships · Featured card · Xplore menu |
+| **Community** | News · Events · Announcements |
+| **Transport** | All · Bus · Train · Taxi (+ any new mode found in the data) |
+| **Admin** | Users (super admin only) · My profile |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The active tab is stored in the URL (`?tab=`), so refresh/back/links work.
+
+## How it's built
+
+- `src/lib/schemas.js` — one schema per Firestore collection (fields, types, defaults). **Add or change a field here and the list, search and edit form update automatically.**
+- `src/components/CollectionManager.jsx` — generic list / search / filter / create / edit / delete for any schema.
+- `src/components/SchemaForm.jsx` — renders a schema (+ `buildPayload` to clean values before saving).
+- `src/components/fields.jsx` — string lists, object lists, image uploader, map picker, gradient picker.
+- `src/components/ui.jsx` — Button, Input, Modal, Tabs, Toasts, … (Tailwind only).
+
+## Dynamic content
+
+- **Townships** → `homescreen` docs with `type: "township"` (history, legends, landmarks, facts, colours, aliases). On the Townships tab use **Import built-in townships** once to load the 8 that used to be hard-coded in the app.
+- **Transport** → `transport` docs. Use **Load sample routes** once on an empty collection.
+- **Hero image** → `homescreen/hero`; **News** → `news`; **Events** → `events`; **Announcements** → `announcements` (pinned, typed, optional start/expiry window).
+- Toggle **Active** on any item to hide it from the app without deleting it.
+
+## Auth
+
+`admin/{uid}` = super admin · `useradmin/{uid}` with `isActive: true` = approved admin. Everyone else is bounced to `/login`.
+> The UI check is not security — enforce the same rules in your Firestore/Storage security rules.
