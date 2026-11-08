@@ -322,6 +322,35 @@ export const TOWNSHIP_SCHEMA = {
 }
 
 /* ── Community: news, events, announcements ──────────────── */
+
+/* Sample content for the one-click "Load sample …" buttons. Dates are relative to today
+ * so events always look upcoming and announcements never look expired. */
+const daysFromNow = (d, h = 0, m = 0) => { const x = new Date(); x.setDate(x.getDate() + d); x.setHours(h, m, 0, 0); return x }
+
+export const NEWS_SEED = () => [
+  { title: 'New Rea Vaya feeder routes announced for Orlando and Meadowlands', summary: 'Commuters in Orlando East and Meadowlands will get faster links to the Soweto trunk route from next month.', body: 'The City of Johannesburg has confirmed two new feeder routes that will connect Orlando East and Meadowlands to the Rea Vaya trunk line.\n\nOfficials say the routes are expected to cut average commute times by up to 20 minutes during peak hours.\n\nPublic consultation sessions will be held at local community halls over the coming weeks.', category: 'Municipal', source: 'City of Johannesburg', isFeatured: true, publishedAt: daysFromNow(-1, 9) },
+  { title: 'Vilakazi Street businesses report a surge in weekend tourism', summary: 'Restaurants, galleries and tour operators say visitor numbers are well up on last year.', body: 'Owners along Vilakazi Street say weekend footfall has grown steadily, with many visitors coming from abroad and from other provinces.\n\nLocal guides are now offering extended heritage walks that include stops at the Hector Pieterson Memorial and Freedom Square.', category: 'Business', source: 'Soweto Tourism Forum', publishedAt: daysFromNow(-2, 14) },
+  { title: 'Youth coding bootcamp opens applications in Pimville', summary: 'Free 12-week programme for learners aged 18–25, no prior experience required.', body: 'A community-led tech hub in Pimville has opened applications for its next coding bootcamp.\n\nParticipants will learn web development, receive mentorship from industry volunteers and get help with CV and interview preparation.\n\nApplications close at the end of the month.', category: 'Community', source: 'Pimville Tech Hub', publishedAt: daysFromNow(-3, 11) },
+  { title: 'Clinic hours extended at Chris Hani Baragwanath Hospital outpatients', summary: 'Selected outpatient services will now run later on weekdays.', body: 'The hospital has extended hours for selected outpatient services to reduce waiting times.\n\nPatients are encouraged to bring their ID and clinic cards, and to arrive early for chronic medication collection.', category: 'Local News', source: 'Gauteng Health', publishedAt: daysFromNow(-5, 8, 30) },
+  { title: 'Neighbourhood safety patrols launched in Dobsonville', summary: 'Residents and community policing forum volunteers begin evening patrols this week.', body: 'The Dobsonville Community Policing Forum has launched coordinated evening patrols in partnership with local police.\n\nResidents are asked to report suspicious activity through the official hotline rather than confronting anyone directly.', category: 'Safety', source: 'Dobsonville CPF', publishedAt: daysFromNow(-6, 17) },
+  { title: 'Soweto Theatre announces its new season line-up', summary: 'Dance, jazz and spoken-word performances from local and visiting artists.', body: 'Soweto Theatre has unveiled a season packed with live music, dance and theatre.\n\nTickets are on sale now, with discounted rates for students and pensioners.', category: 'Events', source: 'Soweto Theatre', publishedAt: daysFromNow(-8, 10) },
+].map((n) => ({ ...n, isActive: true, isFeatured: !!n.isFeatured }))
+
+export const EVENTS_SEED = () => [
+  { title: 'Soweto Heritage Walk', category: 'Heritage', date: daysFromNow(3, 9), location: 'Hector Pieterson Memorial, Orlando West', description: 'A guided walk through Soweto’s historic sites with local storytellers.\n\nWear comfortable shoes and bring water. The walk takes about three hours.', price: 'R120', organizer: 'Soweto Heritage Trust' },
+  { title: 'Vilakazi Street Food Market', category: 'Food & Market', date: daysFromNow(5, 10), location: 'Vilakazi Street, Orlando West', description: 'Street food, craft stalls and live acoustic sets all day.\n\nFamily friendly with plenty of seating.', price: 'Free', organizer: 'Vilakazi Traders Association' },
+  { title: 'Jazz at the Theatre', category: 'Music & Culture', date: daysFromNow(9, 19, 30), location: 'Soweto Theatre, Jabulani', description: 'An evening of live jazz featuring emerging and established Soweto artists.\n\nDoors open at 18:30.', price: 'R150', organizer: 'Soweto Theatre' },
+  { title: 'Community Soccer Day', category: 'Sports', date: daysFromNow(12, 8), location: 'Orlando Stadium', description: 'Open five-a-side tournament for all ages. Register your team at the gate.\n\nRefreshments on sale.', price: 'R20 per team', organizer: 'Orlando Sports Council' },
+  { title: 'Township Clean-up Drive', category: 'Community', date: daysFromNow(16, 8, 30), location: 'Kliptown Open Square', description: 'Join neighbours for a morning clean-up. Gloves and bags provided.\n\nBreakfast for all volunteers.', price: 'Free', organizer: 'Kliptown Youth Programme' },
+  { title: 'Youth Day Remembrance Concert', category: 'Music & Culture', date: daysFromNow(-10, 15), location: 'Freedom Charter Square, Kliptown', description: 'An afternoon of music and poetry honouring the youth of 1976.', price: 'Free', organizer: 'City of Johannesburg' },
+].map((e) => ({ ...e, isActive: true }))
+
+export const ANNOUNCEMENTS_SEED = () => [
+  { title: 'Planned water interruption', message: 'Johannesburg Water will carry out maintenance in parts of Meadowlands. Expect low pressure or no water from 09:00 to 16:00. Please store water in advance.', type: 'warning', pinned: true, link: '', linkLabel: '', startsAt: null, expiresAt: daysFromNow(3, 18) },
+  { title: 'Load reduction notice', message: 'Check the latest schedule for your area and plan ahead. Keep devices charged and have a backup light ready.', type: 'urgent', pinned: false, expiresAt: daysFromNow(2, 23, 59) },
+  { title: 'Free health screening this Saturday', message: 'Blood pressure, glucose and HIV testing at Orlando Community Centre from 08:00 to 14:00. Everyone is welcome.', type: 'info', pinned: false, expiresAt: daysFromNow(6, 15) },
+  { title: 'Library membership drive', message: 'Sign up for free at any Soweto public library and get access to books, study spaces and free Wi-Fi.', type: 'success', pinned: false, link: 'https://www.joburg.org.za', linkLabel: 'Learn more', expiresAt: null },
+].map((a) => ({ ...a, isActive: true, publishedAt: new Date() }))
 export const NEWS_SCHEMA = {
   collection: 'news', label: 'News', singular: 'article', icon: Newspaper, titleKey: 'title', hasActive: true,
   sortBy: { key: 'publishedAt', dir: 'desc' }, filter: 'category', searchKeys: ['title', 'summary', 'category', 'source'],
